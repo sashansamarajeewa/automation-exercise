@@ -1,0 +1,59 @@
+name: CI
+on: [push]
+jobs:
+  style_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: black
+        uses: psf/black@stable
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+          with:
+            python-version: '3.12'
+      - name: dependencies
+        run: pip install pytest coverage matplotlib numpy
+      - name: run coverage
+        run: coverage run -m pytest
+      - name: upload
+        uses: actions/upload-artifact@v4
+          with:
+            name: coverage
+            path: .coverage
+            retention-days: 1
+            include-hidden-files: true
+            if-no-files-found: error
+
+  coverage_report:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+          with:
+            python-version: '3.12'
+      - name: dependencies
+        run: pip install coverage
+      - name: download
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+      - name: create report
+        run: coverage report
+      - name: create xml
+        run: coverage xml
+      -name: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 14
